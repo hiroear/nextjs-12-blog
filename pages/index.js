@@ -8,6 +8,7 @@ import Layout, { siteTitle } from '../components/Layout';
 import styles from '../styles/Home.module.css'
 import utilStyles from '../styles/utils.module.css';
 import { getPostsData } from "../lib/post";  // posts配下の各mdファイルのメタデータが入ったオブジェクトを返すカスタムフック
+import { useState, useEffect } from 'react';
 
 // ↓ 以下、SSGの場合のみ必要。 外部のデータを取得するための関数(読み込み時一度だけ実行される)
 // getStaticProps関数の中でカスタムフックを呼び出し、各mdファイルのデータオブジェクトを取得 → それを propsに設定 (Homeコンポーネントに propsを渡す準備)
@@ -47,6 +48,57 @@ export async function getServerSideProps(context) {
 */
 
 export default function Home({ allPostsData }) {
+  const [users, setUsers] = useState([]);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    // マウント後、一度だけ api/hello で取得した jsonplaceholder の users一覧を jsonに変換して、setUsersにセット
+    const fetchUsers = async () => {
+      const response = await fetch('api/hello');
+      const data = await response.json();
+      setUsers(data.users); // api/hello で定義した users を取得
+    };
+    fetchUsers(); // 関数を実行
+
+    // マウント後 api/hello に POSTリクエストを送信 (hello.jsに console.log(req.body)と書くと { name: 'hiroe' } と届く)
+    // fetchの第二引数に、オブジェクトを渡す。 method: 'POST' で、POSTリクエストを送信することを指定。
+    // fetch関数では jsonでデータを送信するため headers: { 'Content-Type': 'application/json' } で、送信するデータの形式を指定。
+    // 送信するデータは、bodyに設定。 { name: 'hiroe' } というオブジェクトを JSON形式に変換したもの.
+    const postData = async () => {
+      await fetch('api/hello', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: 'hiroe' }),
+      });
+    }
+    postData(); // 関数を実行
+  }, []);
+  
+
+  // マウント後、api/method で取得した messageを jsonに変換して、setMessageにセット
+  useEffect(() => {
+    const fetchMessage = async () => {
+      const response = await fetch('api/method');
+      const data = await response.json();
+      setMessage(data.message); // api/method で定義した message を取得
+    };
+    fetchMessage(); // 関数を実行
+
+    const postMessage = async () => { // マウント後 api/method に POSTリクエストを送信
+      await fetch('api/method', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: 'araki' }),
+      });
+    }
+    postMessage(); // 関数を実行
+  }, []);
+  
+
   return (
     <>
       <Head>
@@ -76,6 +128,15 @@ export default function Home({ allPostsData }) {
             ))}
           </div>
         </section>
+
+        {/* api/hello で取得した jsonplaceholder の usersの名前一覧を表示 */}
+        <ul>
+          {users.map((user) => (
+            <li key={user.id}>{user.name}</li>
+          ))}
+        </ul>
+
+        <p>{message}</p>
       </Layout>
     </>
   )
